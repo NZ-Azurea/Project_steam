@@ -1,0 +1,1 @@
+uvicorn src\API_DB:app --host 0.0.0.0 --port 27099 --reload
