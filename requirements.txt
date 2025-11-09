@@ -1,0 +1,7 @@
+requests
+fastapi
+uvicorn
+pymongo
+streamlit
+httpx
+st-clickable-images

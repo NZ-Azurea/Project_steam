@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://192.168.5.151:27099"
+BASE_URL = "http://10.242.254.198:27099"
 
 
 def check_fastapi():
@@ -75,13 +75,37 @@ def check_health():
     except Exception as e:
         print("❌ /health failed:", e)
 
+def Test_games_reco():
+    """
+    Call /recommandation and interpret the {message, Status} format.
+    """
+    try:
+        resp = requests.get(f"{BASE_URL}/recommandation", timeout=10)
+        # Same note: you now always return HTTP 200,
+        # but keep it anyway:
+        resp.raise_for_status()
+
+        data = resp.json()
+        status = data.get("Status")
+        message = data.get("message")
+        if status is True:
+            print("✅ /recommandation OK:",message)#[game["name"] for game in message]
+        else:
+            print("❌ /recommandation reported a problem:", message)
+
+    except Exception as e:
+        print("❌ /recommandation failed:", e)
+
 
 if __name__ == "__main__":
-    print("=== Checking FastAPI ===")
-    check_fastapi()
+    # print("=== Checking FastAPI ===")
+    # check_fastapi()
 
-    print("\n=== Checking MongoDB via /command ===")
-    check_mongodb_via_api()
+    # print("\n=== Checking MongoDB via /command ===")
+    # check_mongodb_via_api()
 
-    print("\n=== Checking /health endpoint ===")
-    check_health()
+    # print("\n=== Checking /health endpoint ===")
+    # check_health()
+    
+    print("\n=== Testing /recommandation endpoint ===")
+    Test_games_reco()
