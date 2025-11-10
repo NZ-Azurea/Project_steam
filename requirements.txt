@@ -5,3 +5,6 @@ pymongo
 streamlit
 httpx
 st-clickable-images
+rich
+streamlit-js-eval
+extra-streamlit-components

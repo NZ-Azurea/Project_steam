@@ -1,8 +1,31 @@
 import requests
 
-BASE_URL = "http://10.242.254.198:27099"
 
+BASE_URL = "http://localhost:27099"
 
+def get_game_info(game_id,verbose=False):
+    """
+    get top recommended games from /recommandation endpoint
+    using the {message, Status} format.
+    """
+    try:
+        resp = requests.post(f"{BASE_URL}/Game",params={f"game_id": {game_id}}, timeout=10)
+        # Same note: you now always return HTTP 200,
+        # but keep it anyway:
+        resp.raise_for_status()
+
+        data = resp.json()
+        status = data.get("Status")
+        message = data.get("message")
+        
+        if status is True:
+            if verbose:
+                print("✅ /health OK:", message)
+            return message
+        else:
+            print("❌ /health reported a problem:", message)
+    except Exception as e:
+        print("❌ /health failed:", e)
 def check_fastapi():
     """
     Check if the FastAPI server is responding at all.
@@ -14,8 +37,6 @@ def check_fastapi():
         print("✅ FastAPI server is UP (docs reachable). Status:", resp.status_code)
     except Exception as e:
         print("❌ FastAPI server is NOT responding:", e)
-
-
 def check_mongodb_via_api():
     """
     Check if MongoDB is responding by calling /command
@@ -51,8 +72,6 @@ def check_mongodb_via_api():
 
     except requests.exceptions.RequestException as e:
         print("❌ Error calling /command:", e)
-
-
 def check_health():
     """
     Call /health and interpret the {message, Status} format.
@@ -74,7 +93,6 @@ def check_health():
 
     except Exception as e:
         print("❌ /health failed:", e)
-
 def Test_games_reco():
     """
     Call /recommandation and interpret the {message, Status} format.
@@ -107,5 +125,6 @@ if __name__ == "__main__":
     # print("\n=== Checking /health endpoint ===")
     # check_health()
     
-    print("\n=== Testing /recommandation endpoint ===")
-    Test_games_reco()
+    # print("\n=== Testing /recommandation endpoint ===")
+    # Test_games_reco()
+    print(get_game_info(10).keys())

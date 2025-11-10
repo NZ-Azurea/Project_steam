@@ -230,9 +230,12 @@ def import_reviews(db):
     # Indexes for reviews
     print("[reviews] Ensuring indexes…]")
     col.create_index([("app_id", ASCENDING), ("post_date", DESCENDING)])
+    print("[reviews] Created index on (app_id, post_date DESC)")
     col.create_index([("app_id", ASCENDING), ("recommend", ASCENDING)])
+    print("[reviews] Created index on (app_id, recommend)")
     col.create_index([("user", ASCENDING), ("app_id", ASCENDING)])
     # Text index on review_text (optional; comment out if you don't want it)
+    print("[reviews] Creating text index on review_text (may take time)…")
     col.create_index([("review_text", "text")])
     print(f"[reviews] Done. Total inserted ≈ {total_inserted}")
 
