@@ -285,26 +285,16 @@ def get_Game(game_id: int):
         return ApiResponse(message=err, Status=False)
 
     try:
-        # Example: { "ping": 1 } or { "serverStatus": 1 }
-        result = db.games.find({},{}).sort({ "positive": -1, "_id": 1 }).limit(1)
-        missing_asset = []
-        result = [game for game in result]
-        for game in result:
-            if "assets" not in game or not game["assets"]:
-                missing_asset.append(game["_id"])
-        if missing_asset:
-            logger.info(f"Fetching assets for missing appids: {missing_asset}")
-            assets = fetch_assets_for_appids(missing_asset)
-            for game in result:
-                appid = game["_id"]
-                if appid in assets:
-                    game["assets"] = assets[appid]
-                    db.games.update_one(
-                        {"_id": appid},
-                        {"$set": {"assets": assets[appid]}}
-                    )
+        result = db.games.find_one({"_id": game_id})
+        if "assets" not in result or not result["assets"]:
+            assets = fetch_assets_for_appids([result["_id"]])
+            result["assets"] = assets[result["_id"]]
+            db.games.update_one(
+                {"_id": result["_id"]},
+                {"$set": {"assets": assets[result["_id"]]}}
+            )
         
-        return ApiResponse(message=result[0], Status=True)
+        return ApiResponse(message=result, Status=True)
 
     except Exception as e:
         # No HTTPException: we always return our own JSON envelope

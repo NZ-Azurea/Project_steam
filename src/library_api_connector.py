@@ -1,4 +1,6 @@
 import requests
+import streamlit as st
+
 BASE_URL = "http://10.242.216.203:27099"
 def get_default_game_reco(verbose=False):
     """
@@ -41,12 +43,12 @@ def get_game_info(game_id,verbose=False):
         
         if status is True:
             if verbose:
-                print("✅ /health OK:", message)
+                print("✅ /Game OK:", message)
             return message
         else:
-            print("❌ /health reported a problem:", message)
+            print("❌ /Game reported a problem:", message)
     except Exception as e:
-        print("❌ /health failed:", e)
+        print("❌ /Game failed:", e)
         
 def add_user(name: str, verbose: bool = False):
     """
@@ -63,9 +65,10 @@ def add_user(name: str, verbose: bool = False):
         if status is True:
             if verbose:
                 print(f"✅ /user create OK:", message)
-            return message
+            return True, message
         else:
             print(f"❌ /user create reported a problem:", message)
+            return False, message
     except Exception as e:
         print("❌ /user create failed:", e)
 def delete_user(name: str, verbose: bool = False):
@@ -83,9 +86,10 @@ def delete_user(name: str, verbose: bool = False):
         if status is True:
             if verbose:
                 print(f"✅ /user delete OK:", message)
-            return message
+            return True, message
         else:
             print(f"❌ /user delete reported a problem:", message)
+            return False, message
     except Exception as e:
         print("❌ /user delete failed:", e)
 def rename_user(old_name: str, new_name: str, verbose: bool = False):
@@ -104,9 +108,10 @@ def rename_user(old_name: str, new_name: str, verbose: bool = False):
         if status is True:
             if verbose:
                 print(f"✅ /user rename OK:", message)
-            return message
+            return True, message
         else:
             print(f"❌ /user rename reported a problem:", message)
+            return False, message
     except Exception as e:
         print("❌ /user rename failed:", e) 
 def get_user_by_name(name: str, verbose: bool = False):
@@ -125,9 +130,10 @@ def get_user_by_name(name: str, verbose: bool = False):
         if status is True:
             if verbose:
                 print("✅ /user fetch OK:", message)
-            return message
+            return True, message
         else:
             print("❌ /user fetch reported a problem:", message)
+            return False, message
 
     except Exception as e:
         print("❌ /user fetch failed:", e)

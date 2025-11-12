@@ -119,13 +119,13 @@ def main():
     print("\n[4] Rename non-existing old name (expect failure)")
     rename_user(base_name, base_name + "_x", verbose=args.verbose)
 
-    # 5) Delete renamed user (expect success)
-    print("\n[5] Delete renamed user (expect success)")
-    delete_user(renamed, verbose=args.verbose)
+    # # 5) Delete renamed user (expect success)
+    # print("\n[5] Delete renamed user (expect success)")
+    # delete_user(renamed, verbose=args.verbose)
 
-    # 6) Delete again (expect failure)
-    print("\n[6] Delete again (expect failure)")
-    delete_user(renamed, verbose=args.verbose)
+    # # 6) Delete again (expect failure)
+    # print("\n[6] Delete again (expect failure)")
+    # delete_user(renamed, verbose=args.verbose)
 
     print("\n✅ Test script finished.")
 

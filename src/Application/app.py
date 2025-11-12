@@ -8,7 +8,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 from library_api_connector import get_default_game_reco
 from Library_fonctions import load_state_from_web_storage, save_state_to_web_storage
-from Library_fonctions import set_cookie_value, get_cookie_value, delete_cookie
+from Library_fonctions import set_cookie, get_cookie, delete_cookie
 
 ## --- Local Storage for session persistence ---
 STORAGE_KEY = "App_Page"
@@ -88,8 +88,8 @@ if message:
         with col2:
             st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
             if st.button("➕ Aller au magasin", key=f"add_lib_{idx}"):
-                set_cookie_value("game_name_magasin", game_id)
-                st.write(f"Jeu '{get_cookie_value("game_name_magasin")}' aller au magasin")
+                set_cookie("game_name_magasin", game_id)
+                st.write(f"Jeu '{get_cookie("game_name_magasin")}' aller au magasin")
                 st.switch_page("pages/magasin.py")
 
     

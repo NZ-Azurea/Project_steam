@@ -7,4 +7,4 @@ httpx
 st-clickable-images
 rich
 streamlit-js-eval
-extra-streamlit-components
+streamlit_cookies_controller

@@ -1,80 +1,103 @@
 import streamlit as st
 import json
 from streamlit_js_eval import streamlit_js_eval
-from typing import Any, Optional
-import extra_streamlit_components as stx
+import uuid
 import time
-import datetime as dt
 
-
-@st.cache_resource
-def get_cookie_mgr():
-    return stx.CookieManager(key="cookie_manager")
-cookie_manager = get_cookie_mgr()
-
-
-if "cookies_ready" not in st.session_state:
-    _ = cookie_manager.get_all()
-    time.sleep(0.05)  # tiny delay helps the component settle
-    st.session_state["cookies_ready"] = True
-    # On Streamlit Cloud or slow networks, you can uncomment:
-    # st.rerun()
-
-def set_cookie_value(
-    name: str,
-    data: Any,
-    days: int = 30,
-    path: str = "/",
-    secure: bool = True,
-    samesite: str = "Lax",  # "Lax" | "Strict" | "None"
-) -> None:
+def _eval_js(js: str, key_prefix: str):
+    # unique key so Streamlit re-runs the JS each call
+    return streamlit_js_eval(js_expressions=js, key=f"{key_prefix}_{uuid.uuid4().hex}")
+def set_cookie(name: str, data, days: int = 365):
     """
-    Save ANY JSON-serializable value (str/int/float/bool/None/list/dict) in a cookie.
-    Stored as JSON text so types round-trip correctly.
+    Save a cookie `name` with JSON-serialized `data`. Default expiry: 365 days.
+    After setting, st.session_state[name] = data (as Python object), then st.stop().
     """
-    json_text = json.dumps(data, separators=(",", ":"))  # compact JSON
-    expires_at = dt.datetime.utcnow() + dt.timedelta(days=days)
-
-    # CookieManager accepts either expires_at *or* max_age (seconds).
-    # We'll prefer expires_at for clarity.
-    try:
-        cookie_manager.set(
-            name,
-            json_text,
-            expires_at=expires_at,   # or max_age=days*24*60*60
-            path=path,
-            secure=secure,
-            same_site=samesite,      # if your version doesn't support this, remove it
-        )
-    except TypeError:
-        # Fallback for older versions without same_site kwarg
-        cookie_manager.set(
-            name,
-            json_text,
-            expires_at=expires_at,
-            path=path,
-            secure=secure,
-        )
-def get_cookie_value(name: str) -> Optional[Any]:
+    payload = json.dumps(data)  # serialize in Python
+    js = f"""
+    (function() {{
+        const name = {json.dumps(name)};
+        const value = encodeURIComponent({json.dumps(payload)});
+        const days = {days};
+        const d = new Date();
+        d.setTime(d.getTime() + days*24*60*60*1000);
+        document.cookie = name + "=" + value + "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+        return true;
+    }})()
     """
-    Read a cookie and return the original Python value via JSON decoding.
-    Returns None if the cookie doesn't exist or JSON is malformed.
+    _eval_js(js, "save_cookie")
+    st.session_state[name] = data
+def get_cookie(name: str):
     """
-    raw = cookie_manager.get(name)
-    if raw is None:
-        st.session_state[name] = None
-    try:
-        st.session_state[name] = json.loads(raw)
-    except Exception:
-        st.session_state[name] = None
-def cookie_exists(name: str) -> bool:
+    Get cookie `name`. Stores decoded JSON value into st.session_state[name],
+    or None if it doesn't exist. Then st.stop().
     """
-    True if the cookie exists in the browser (non-HttpOnly).
+    js = f"""
+    (function() {{
+        const target = {json.dumps(name)} + "=";
+        const parts = document.cookie.split(';');
+        for (let c of parts) {{
+            c = c.trim();
+            if (c.indexOf(target) === 0) {{
+                const raw = c.substring(target.length);
+                try {{
+                    return decodeURIComponent(raw);
+                }} catch (e) {{
+                    return raw;
+                }}
+            }}
+        }}
+        return null;
+    }})()
     """
-    return cookie_manager.get(name) is not None
-def delete_cookie(name: str, path: str = "/") -> None:
-    st.session_state.pop(name, None)
-    cookie_manager.delete(name, path=path)
+    if name in st.session_state or st.session_state.get(name, None) is not None:
+        return st.session_state[name]
+    result = _eval_js(js, "get_cookie")
+    st.session_state[name] = json.loads(result) if result else None
+    st.stop()
+def delete_cookie(name: str):
+    """
+    Delete cookie `name`. After deletion, st.session_state[name] = None, then st.stop().
+    """
+    js = f"""
+    (function() {{
+        const n = {json.dumps(name)};
+        // Expire immediately (also include past date for broad browser support)
+        document.cookie = n + "=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
+        return true;
+    }})()
+    """
+    _eval_js(js, "delete_cookie")
+    st.session_state[name] = None
+    st.stop()
+def check_cookie(name: str):
+    """
+    Check if cookie `name` exists. Sets st.session_state[name] to its JSON-decoded
+    value (or None), returns True/False to Python, then st.stop().
+    """
+    js = f"""
+    (function() {{
+        const target = {json.dumps(name)} + "=";
+        const parts = document.cookie.split(';');
+        for (let c of parts) {{
+            c = c.trim();
+            if (c.indexOf(target) === 0) {{
+                const raw = c.substring(target.length);
+                try {{
+                    return ["1", decodeURIComponent(raw)]; // ["exists","value"]
+                }} catch (e) {{
+                    return ["1", raw];
+                }}
+            }}
+        }}
+        return ["0", null];
+    }})()
+    """
+    exists_and_val = _eval_js(js, "check_cookie") or ["0", None]
+    exists, raw_val = exists_and_val[0] == "1", exists_and_val[1]
+    st.session_state[name] = json.loads(raw_val) if raw_val else None
+    # (optional) also return exists if you call this from Python code
+    st.stop()
+    return exists
 
 def _unwrap_local_storage(x):
     if isinstance(x, list) and x:
