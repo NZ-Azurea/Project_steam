@@ -5,16 +5,17 @@ SRC = Path(__file__).resolve().parents[1]  # ...\src
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 from library_api_connector import get_default_game_reco, get_game_info
-from Library_fonctions import get_cookie, delete_cookie
+from Library_fonctions import save_key_to_query,load_state_from_query,ensure_key_in_query
 from Library_fonctions import load_state_from_web_storage, save_state_to_web_storage
 from st_clickable_images import clickable_images
 
 STORAGE_KEY = "magasin_Page"
-PERSIST_KEYS = ["game_data","game_name_magasin"]
+PERSIST_KEYS = ["game_data"]
 load_state_from_web_storage(STORAGE_KEY,PERSIST_KEYS,max_age_seconds=180)
-
+load_state_from_query()
 # mis dans le session_state
-get_cookie("game_name_magasin")
+ensure_key_in_query("game_name_magasin")
+ensure_key_in_query("User")
 
 
 st.set_page_config(page_title="Magasin", page_icon="🏬", layout="wide")
@@ -31,12 +32,7 @@ st.markdown("<h1 style='text-align:center;'>Page du magasin</h1>", unsafe_allow_
 if st.button("🏠 Accueil"):
     st.switch_page("app.py")
 
-if "game_name_magasin" not in st.session_state or st.session_state["game_name_magasin"]==None:
-    st.session_state["game_name_magasin"] = get_cookie("game_name_magasin")
-    save_state_to_web_storage(STORAGE_KEY,PERSIST_KEYS)
-    cookie_game_id = st.session_state["game_name_magasin"]
-else:
-    cookie_game_id = st.session_state["game_name_magasin"]
+cookie_game_id = st.session_state["game_name_magasin"]
 # --- CAS : Page du jeu dans le magasin ---
 if cookie_game_id !=None:
     game_id = cookie_game_id

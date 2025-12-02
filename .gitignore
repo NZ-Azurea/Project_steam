@@ -4,3 +4,5 @@ data/Game Reviews
 data/games.json
 .vscode
 data/Game Reviews.zip
+log_tensorboard
+.env

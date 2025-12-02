@@ -1,6 +1,10 @@
 import streamlit as st
-from Library_fonctions import set_cookie
+from Library_fonctions import load_state_from_query,save_key_to_query,ensure_key_in_query
 from library_api_connector import get_user_by_name, add_user
+import time
+
+load_state_from_query()
+ensure_key_in_query("User")
 
 st.set_page_config(page_title="Login", page_icon="🔐")
 
@@ -36,23 +40,17 @@ if st.button("✅ Se connecter"):
         try:
             # --- Vérifie si l'utilisateur existe ---
             user_data = get_user_by_name(username)
-
             if user_data[0] != False :
                 # --- Crée un cookie avec le nom de l'utilisateur ---
-                set_cookie("user", username)
-
-                # --- Stocke aussi en session_state (pour usage instantané) ---
-                st.session_state["user"] = username
-
-                st.success(f"✅ Bienvenue {username} ! Redirection en cours...")
-
-                # --- Redirection vers la bibliothèque (ou accueil) ---
+                st.session_state["User"] = username
+                save_key_to_query("User")
                 st.switch_page("./app.py")
             else:
                 st.error("❌ Utilisateur introuvable. Vérifie le nom ou crée un compte.")
         
         except Exception as e:
             st.error(f"Erreur lors de la connexion : {e}")
+            print(f"Erreur lors de la connexion : {e}")
     
 
 st.markdown("<hr>", unsafe_allow_html=True)
@@ -88,9 +86,8 @@ if st.session_state.show_create:
                     success, message = add_user(new_username)
 
                     if success:
-                        # --- Crée le cookie utilisateur ---
-                        set_cookie("user", new_username)
-                        st.session_state["user"] = new_username
+                        st.session_state["User"] = username
+                        save_key_to_query("User")
 
                         st.success(f"✅ Compte '{new_username}' créé avec succès !")
                         st.info("Redirection vers la bibliothèque...")

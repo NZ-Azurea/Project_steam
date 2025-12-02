@@ -4,7 +4,6 @@ import random
 import string
 import requests
 
-# -------- Connectors (copy-paste from your code) --------
 BASE_URL = "http://10.242.216.203:27099"
 
 def add_user(name: str, verbose: bool = False):
@@ -21,7 +20,6 @@ def add_user(name: str, verbose: bool = False):
             print("❌ /user create reported a problem:", message)
     except Exception as e:
         print("❌ /user create failed:", e)
-
 def delete_user(name: str, verbose: bool = False):
     try:
         resp = requests.delete(f"{BASE_URL}/user", json={"name": name}, timeout=10)
@@ -36,7 +34,6 @@ def delete_user(name: str, verbose: bool = False):
             print("❌ /user delete reported a problem:", message)
     except Exception as e:
         print("❌ /user delete failed:", e)
-
 def rename_user(old_name: str, new_name: str, verbose: bool = False):
     try:
         payload = {"old_name": old_name, "new_name": new_name}
@@ -52,7 +49,6 @@ def rename_user(old_name: str, new_name: str, verbose: bool = False):
             print("❌ /user rename reported a problem:", message)
     except Exception as e:
         print("❌ /user rename failed:", e)
-
 def get_user_by_name(name: str, verbose: bool = False):
     """
     Fetch a user from GET /user?name=<name>.
@@ -76,7 +72,6 @@ def get_user_by_name(name: str, verbose: bool = False):
     except Exception as e:
         print("❌ /user fetch failed:", e)
 
-# -------- Helpers --------
 def rand_suffix(n=5):
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
 
@@ -89,7 +84,7 @@ def main():
     args = parser.parse_args()
 
     global BASE_URL
-    BASE_URL = args.base_url  # update connectors
+    BASE_URL = args.base_url
 
     base_name = args.name + "_" + rand_suffix()
     renamed = base_name + "_renamed"

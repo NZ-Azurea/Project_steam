@@ -1,3 +1,5 @@
+--index-url https://download.pytorch.org/whl/cu128
+--find-links https://data.pyg.org/whl/torch-2.8.0+cu128.html
 requests
 fastapi
 uvicorn
@@ -8,3 +10,16 @@ st-clickable-images
 rich
 streamlit-js-eval
 streamlit_cookies_controller
+extra_streamlit_components
+
+torch-geometric
+torch
+torchvision
+pyg_lib
+torch_scatter
+torch_sparse
+torch_cluster
+torch_spline_conv
+transformers
+python-dotenv
+hf_xet

@@ -1,11 +1,15 @@
-from fastapi import FastAPI
-from pydantic import BaseModel,constr
+import sys
+from pathlib import Path
+SRC = Path(__file__).resolve().parents[1] / "src/NLGCL"  # ...\src
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+from fastapi import FastAPI,Body,HTTPException
+from pydantic import BaseModel,constr,Field
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, PyMongoError,DuplicateKeyError
 from bson import json_util
-from typing import Any,List, Dict
+from typing import Any,List, Dict,Optional
 import json
-import requests
 import time
 import httpx
 from urllib.parse import urlencode, quote
@@ -15,9 +19,14 @@ from rich.logging import RichHandler
 from rich.traceback import install as rich_traceback_install
 from rich import pretty as rich_pretty
 from datetime import datetime
-# Pretty print and tracebacks in the whole app
-rich_pretty.install()                       # nicer pprint for dicts/lists in logs
-rich_traceback_install(show_locals=False)   # colored, clickable tracebacks
+import numpy as np
+import traceback
+
+from NLGCL.recomendation_NLGCL import setup_recbole_model,recommend_topk
+from GenSar.recommender_service import recommender
+recommender.load()
+rich_pretty.install()
+rich_traceback_install(show_locals=False)
 dictConfig({
     "version": 1,
     "disable_existing_loggers": False,
@@ -50,43 +59,111 @@ dictConfig({
     },
 })
 logger = logging.getLogger(__name__)
-
-
+env_vars = {
+    k.strip(): v.strip()
+    for k, v in (
+        line.split("=", 1)
+        for line in Path(".env").read_text().splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    )
+}
 
 # ---------- MongoDB CONFIG ----------
-
-username = "NebuZard"
-password = "7YAMTHHD"
-uri = f"mongodb://{username}:{password}@127.0.0.1:27017/?authSource=admin"
+username = env_vars.get("DB_USER", "user")
+password = env_vars.get("DB_PASSWORD", "pass")
+db_ip = env_vars.get("DB_IP", "localhost")
+db_port = env_vars.get("DB_PORT", "27017")
+db_name = env_vars.get("DB_NAME", "Steam_Project")
+uri = f"mongodb://{username}:{password}@{db_ip}:{db_port}/?authSource=admin"
 
 # Short timeout so we don't block forever if Mongo is down
 client = MongoClient(uri, serverSelectionTimeoutMS=2000)
-db = client["Steam_Project"]
+db = client[db_name]
+
+#Load the model
+try:
+    NLGCL_model, NLGCL_dataset, NLGCL_train_data, NLGCL_device = setup_recbole_model(
+        model_path="NLGCL\\saved\\NLGCL-Dec-02-2025_17-09-34.pth",
+        dataset_name="game",
+        config_file_list=["NLGCL\\properties\\game.yaml"]
+    )
+except Exception as e:
+    print(f"\n--- ERREUR --- \nImpossible de charger les composants Recbole: {e}")
+    traceback.print_exc()
 
 # ---------- FASTAPI APP ----------
 
 app = FastAPI()
 
-
 class CommandRequest(BaseModel):
     command: dict  # raw MongoDB command as a JSON object
-
-
 class ApiResponse(BaseModel):
     message: Any
     Status: bool
-
 NameStr = constr(strip_whitespace=True, min_length=1, max_length=64)
-
 class UserCreate(BaseModel):
     name: NameStr
-
 class UserDelete(BaseModel):
     name: NameStr
-
 class UserRename(BaseModel):
     old_name: NameStr
     new_name: NameStr
+class GameSearchRequest(BaseModel):
+    limit: int = Field(10, ge=1, le=200)
+
+    max_price: Optional[float] = None
+    name_contains: Optional[str] = None
+
+    categories: Optional[List[str]] = None
+    genres: Optional[List[str]] = None
+
+    min_negative: Optional[int] = None
+    max_negative: Optional[int] = None
+    min_positive: Optional[int] = None
+    max_positive: Optional[int] = None
+
+    release_date_from: Optional[datetime] = None
+    release_date_to: Optional[datetime] = None
+
+    min_required_age: Optional[int] = None
+    max_required_age: Optional[int] = None
+
+    required_tags: Optional[List[str]] = None 
+class ReviewSearchRequest(BaseModel):
+    app_id: int
+    limit: int = Field(10, ge=1, le=200)
+
+    min_playtime: Optional[float] = None
+    min_helpfulness: Optional[int] = None
+
+    post_date_from: Optional[datetime] = None
+    post_date_to: Optional[datetime] = None
+
+    recommended: Optional[bool] = None
+    early_access: Optional[bool] = None
+
+    username: Optional[str] = None
+class GamesRequest(BaseModel):
+    appids: List[int]
+class RecommendRequest(BaseModel):
+    username: str
+    top_k: int = 5
+    max_history: int = 20
+class Recommendation(BaseModel):
+    game_id: str
+    name: str
+    game_idx: int
+    hamming_dist: int
+class RecommendResponse(BaseModel):
+    username: str
+    recommendations: List[Recommendation]
+class RecommendRequest_genral(BaseModel):
+    username: str
+    top_k_Gensar: int = 12
+    top_k_NLGCL: int = 200
+    max_history: int = 20
+    verbose: bool = False
+
 
 def is_mongo_up() -> tuple[bool, str | None]:
     """
@@ -102,33 +179,6 @@ def is_mongo_up() -> tuple[bool, str | None]:
         return False, f"MongoDB error: {e}"
     except Exception as e:
         return False, f"Unexpected error while pinging MongoDB: {e}"
-
-@app.post("/command", response_model=ApiResponse)
-def run_command(req: CommandRequest):
-    """
-    Run a MongoDB command sent by the client and return our wrapped JSON:
-    {
-      "message": <mongo_result or error>,
-      "Status": true/false
-    }
-    """
-    ok, err = is_mongo_up()
-    if not ok:
-        return ApiResponse(message=err, Status=False)
-
-    try:
-        # Example: { "ping": 1 } or { "serverStatus": 1 }
-        result = db.command(req.command)
-
-        # Convert BSON (ObjectId, dates, etc.) to JSON-safe types
-        json_str = json_util.dumps(result)
-        json_result = json.loads(json_str)
-
-        return ApiResponse(message=json_result, Status=True)
-
-    except Exception as e:
-        # No HTTPException: we always return our own JSON envelope
-        return ApiResponse(message=f"Error executing command: {e}", Status=False)
 
 GETITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1"  # no trailing slash
 CDN_BASE = "https://shared.steamstatic.com/store_item_assets/"
@@ -300,6 +350,53 @@ def get_Game(game_id: int):
         # No HTTPException: we always return our own JSON envelope
         return ApiResponse(message=f"Error executing command: {e}", Status=False)
 
+@app.post("/Games", response_model=ApiResponse)
+def get_Games_list(payload: GamesRequest):
+    """
+    Fetch information for a list of games by their app IDs.
+    For any game missing 'assets', fetch them in batch (like /recommandation)
+    and update the database.
+    """
+    ok, err = is_mongo_up()
+    if not ok:
+        return ApiResponse(message=err, Status=False)
+
+    try:
+        game_ids = payload.appids or []
+
+        if not game_ids:
+            # Nothing to fetch, return empty list
+            return ApiResponse(message=[], Status=True)
+
+        # Find all games matching the list of IDs
+        cursor = db.games.find({"_id": {"$in": game_ids}}, {})
+        result = [game for game in cursor]
+
+        # Detect games missing assets
+        missing_asset = []
+        for game in result:
+            if "assets" not in game or not game["assets"]:
+                missing_asset.append(game["_id"])
+
+        # Batch fetch assets for all missing appids (same logic as /recommandation)
+        if missing_asset:
+            logger.info(f"Fetching assets for missing appids: {missing_asset}")
+            assets = fetch_assets_for_appids(missing_asset)
+            print(assets.keys())
+            for game in result:
+                appid = game["_id"]
+                if appid in assets:
+                    game["assets"] = assets[appid]
+                    db.games.update_one(
+                        {"_id": appid},
+                        {"$set": {"assets": assets[appid]}}
+                    )
+
+        return ApiResponse(message=result, Status=True)
+
+    except Exception as e:
+        return ApiResponse(message=f"Error executing command: {e}", Status=False)
+
 @app.post("/user", response_model=ApiResponse)
 def create_user(payload: UserCreate):
     ok, err = is_mongo_up()
@@ -317,7 +414,6 @@ def create_user(payload: UserCreate):
         return ApiResponse(message=f"User '{name}' already exists.", Status=False)
     except Exception as e:
         return ApiResponse(message=f"Error creating user: {e}", Status=False)
-
 @app.delete("/user", response_model=ApiResponse)
 def delete_user(payload: UserDelete):
     ok, err = is_mongo_up()
@@ -384,7 +480,271 @@ def get_user(name: NameStr):
 
     except Exception as e:
         return ApiResponse(message=f"Error fetching user: {e}", Status=False)
+@app.put("/user", response_model=ApiResponse)
+def update_user_object(user: Dict[str, Any] = Body(...)):
+    """
+    Update an existing user document using the JSON body as the new data.
+    The 'name' field is treated as the unique ID.
+    - If user with that name exists -> it's updated.
+    - If not -> return error (no user is created).
+    """
+    ok, err = is_mongo_up()
+    if not ok:
+        return ApiResponse(message=err, Status=False)
+
+    name = user.get("name")
+    if not name:
+        return ApiResponse(message="Field 'name' is required in the user object.", Status=False)
+
+    user["updated_at"] = datetime.now()
+
+    res = db.users.update_one({"name": name}, {"$set": user}, upsert=False)
+
+    if res.matched_count == 0:
+        return ApiResponse(message=f"User '{name}' not found.", Status=False)
+
+    doc = db.users.find_one({"name": name})
+    if not doc:
+        return ApiResponse(message=f"User '{name}' not found after update.", Status=False)
+
+    doc["_id"] = str(doc["_id"])
+    return ApiResponse(message=doc, Status=True)
 @app.get("/health", response_model=ApiResponse)
+
+def serialize_game(doc: Dict[str, Any]) -> Dict[str, Any]:
+    out = dict(doc)
+    # ObjectId -> str
+    if "_id" in out:
+        out["_id"] = str(out["_id"])
+
+    # convert datetimes to isoformat
+    for key in ("release_date", "created_at", "updated_at"):
+        if key in out and isinstance(out[key], datetime):
+            out[key] = out[key].isoformat()
+
+    return out
+@app.post("/games/search", response_model=ApiResponse)
+def search_games(payload: GameSearchRequest):
+    ok, err = is_mongo_up()
+    if not ok:
+        return ApiResponse(message=err, Status=False)
+
+    query: Dict[str, Any] = {}
+
+    # --- price ---
+    if payload.max_price is not None:
+        query["price"] = {"$lte": payload.max_price}
+
+    # --- name substring (case-insensitive) ---
+    if payload.name_contains:
+        query["name"] = {"$regex": payload.name_contains, "$options": "i"}
+
+    # --- categories (array) ---
+    if payload.categories:
+        query["categories"] = {"$all": payload.categories}
+
+    # --- genres (array) ---
+    if payload.genres:
+        query["genres"] = {"$all": payload.genres}
+
+    # --- negative reviews ---
+    if payload.min_negative is not None or payload.max_negative is not None:
+        neg_range: Dict[str, Any] = {}
+        if payload.min_negative is not None:
+            neg_range["$gte"] = payload.min_negative
+        if payload.max_negative is not None:
+            neg_range["$lte"] = payload.max_negative
+        if neg_range:
+            query["negative"] = neg_range
+
+    # --- positive reviews ---
+    if payload.min_positive is not None or payload.max_positive is not None:
+        pos_range: Dict[str, Any] = {}
+        if payload.min_positive is not None:
+            pos_range["$gte"] = payload.min_positive
+        if payload.max_positive is not None:
+            pos_range["$lte"] = payload.max_positive
+        if pos_range:
+            query["positive"] = pos_range
+
+    # --- release date range ---
+    if payload.release_date_from is not None or payload.release_date_to is not None:
+        date_range: Dict[str, Any] = {}
+        if payload.release_date_from is not None:
+            date_range["$gte"] = payload.release_date_from
+        if payload.release_date_to is not None:
+            date_range["$lte"] = payload.release_date_to
+        if date_range:
+            query["release_date"] = date_range
+
+    # --- age requirement ---
+    if payload.min_required_age is not None or payload.max_required_age is not None:
+        age_range: Dict[str, Any] = {}
+        if payload.min_required_age is not None:
+            age_range["$gte"] = payload.min_required_age
+        if payload.max_required_age is not None:
+            age_range["$lte"] = payload.max_required_age
+        if age_range:
+            query["required_age"] = age_range
+
+    # --- required tags: tags.<tag> must exist ---
+    if payload.required_tags:
+        for tag in payload.required_tags:
+            query[f"tags.{tag}"] = {"$exists": True}
+
+    try:
+        cursor = (
+            db.games
+            .find(query)
+            .sort("positive", -1)
+            .limit(payload.limit)
+        )
+
+        # Materialize the cursor so we can inspect/update docs
+        games = [doc for doc in cursor]
+
+        # ---- detect games missing assets ----
+        missing_asset = []
+        for game in games:
+            if "assets" not in game or not game["assets"]:
+                missing_asset.append(game["_id"])
+
+        # ---- batch fetch assets for missing appids (same logic as /Games) ----
+        if missing_asset:
+            logger.info(f"[search_games] Fetching assets for missing appids: {missing_asset}")
+            assets = fetch_assets_for_appids(missing_asset)
+
+            for game in games:
+                appid = game["_id"]
+                if appid in assets:
+                    game["assets"] = assets[appid]
+                    db.games.update_one(
+                        {"_id": appid},
+                        {"$set": {"assets": assets[appid]}}
+                    )
+
+        # Now serialize with assets included
+        docs = [serialize_game(game) for game in games]
+
+        result = {
+            "count": len(docs),
+            "games": docs,
+        }
+        return ApiResponse(message=result, Status=True)
+
+    except Exception as e:
+        return ApiResponse(message=f"Error searching games: {e}", Status=False)
+
+def serialize_review(doc: Dict[str, Any]) -> Dict[str, Any]:
+    out = dict(doc)
+    if "_id" in out:
+        out["_id"] = str(out["_id"])
+    if "post_date" in out and isinstance(out["post_date"], datetime):
+        out["post_date"] = out["post_date"].isoformat()
+    return out
+@app.post("/reviews/search", response_model=ApiResponse)
+def search_reviews(payload: ReviewSearchRequest):
+    """
+    Search reviews for a given app_id with optional filters.
+    """
+    ok, err = is_mongo_up()
+    if not ok:
+        return ApiResponse(message=err, Status=False)
+
+    query: Dict[str, Any] = {"app_id": payload.app_id}
+
+    # min playtime
+    if payload.min_playtime is not None:
+        query["playtime"] = {"$gte": payload.min_playtime}
+
+    # min helpfulness
+    if payload.min_helpfulness is not None:
+        query["helpfulness"] = {"$gte": payload.min_helpfulness}
+
+    # post_date range
+    if payload.post_date_from is not None or payload.post_date_to is not None:
+        date_range: Dict[str, Any] = {}
+        if payload.post_date_from is not None:
+            date_range["$gte"] = payload.post_date_from
+        if payload.post_date_to is not None:
+            date_range["$lte"] = payload.post_date_to
+        if date_range:
+            query["post_date"] = date_range
+
+    # recommended
+    if payload.recommended is not None:
+        query["recommend"] = payload.recommended
+
+    # early access
+    if payload.early_access is not None:
+        query["early_access"] = payload.early_access
+
+    # username (case-insensitive)
+    if payload.username:
+        query["user"] = {"$regex": payload.username, "$options": "i"}
+
+    try:
+        cursor = (
+            db.reviews
+            .find(query)
+            .sort([("helpfulness", -1), ("post_date", -1)])
+            .limit(payload.limit)
+        )
+
+        docs = [serialize_review(doc) for doc in cursor]
+        result = {
+            "count": len(docs),
+            "reviews": docs,
+        }
+        return ApiResponse(message=result, Status=True)
+
+    except Exception as e:
+        return ApiResponse(message=f"Error searching reviews: {e}", Status=False)
+@app.get("/UniqueTagsCategories", response_model=ApiResponse)
+def get_unique_tags_categories():
+    """
+    Return all unique tag keys and all unique categories.
+
+    Response message:
+    {
+        "tags": [...],        # list[str]
+        "categories": [...]   # list[str]
+    }
+    """
+    ok, err = is_mongo_up()
+    if not ok:
+        return ApiResponse(message=err, Status=False)
+
+    try:
+        # ----- Unique tags (keys of the "tags" dict) -----
+        unique_tags = set()
+
+        cursor = db.games.find(
+            {"tags": {"$exists": True}},
+            {"tags": 1, "_id": 0}
+        )
+
+        for doc in cursor:
+            tags_field = doc.get("tags")
+            if isinstance(tags_field, dict):
+                unique_tags.update(tags_field.keys())
+
+        tags_list = sorted(unique_tags)
+
+        # ----- Unique categories (array of strings) -----
+        categories_list = db.games.distinct("categories")
+        categories_list = sorted(categories_list)
+
+        payload = {
+            "tags": tags_list,
+            "categories": categories_list,
+        }
+
+        return ApiResponse(message=payload, Status=True)
+
+    except Exception as e:
+        return ApiResponse(message=f"Error collecting tags/categories: {e}", Status=False)
+
 def health():
     """
     Health check endpoint using the same JSON envelope.
@@ -397,3 +757,58 @@ def health():
         message={"fastapi": "ok", "mongodb": "ok"},
         Status=True
     )
+
+
+class RecommendationRequest(BaseModel):
+    user_id: str
+    topk: int = 30
+
+@app.post("/recomandation/NLGCL", response_model=ApiResponse)
+def make_recomandation(request: RecommendationRequest):
+    ok, err = is_mongo_up()
+    if not ok:
+        return ApiResponse(message=err, Status=False)
+
+    try:
+        pass
+        # 1) Get recommendation appids from NLGCL
+        recomandation = recommend_topk(
+            model=NLGCL_model, 
+            dataset=NLGCL_dataset, 
+            train_data=NLGCL_train_data, 
+            user_id=request.user_id,
+            topk=request.topk,
+            device=NLGCL_device
+        )
+
+        appids = [int(x) for x in recomandation]
+
+        # 2) Re-use existing /Games logic via its core function
+        games_request = GamesRequest(appids=appids)
+        # get_Games_list already returns an ApiResponse
+        games_response: ApiResponse = get_Games_list(games_request)
+
+        # Just return that ApiResponse directly
+        return games_response
+
+    except Exception as e:
+        logger.exception("Error in /recomandation/NLGCL")
+        return ApiResponse(message=f"Error in recommendation: {e}", Status=False)
+
+@app.post("/recomandation/GenSar", response_model=ApiResponse)
+def recommend_games(req: RecommendRequest):
+    try:
+        recs = recommender.recommend_for_user(
+            username=req.username,
+            top_k=req.top_k,
+            max_history=req.max_history,
+        )
+        # recs is already a list[dict]; FastAPI + Pydantic will coerce to Recommendation
+        return ApiResponse(message=recs, Status=True)
+    except ValueError as e:
+        # e.g., unknown user or no history
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal GenSAR error")
+
+  
