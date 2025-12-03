@@ -11,6 +11,11 @@ rich
 streamlit-js-eval
 streamlit_cookies_controller
 extra_streamlit_components
+colorlog
+tensorboard
+texttable
+colorama
+scikit-learn
 
 torch-geometric
 torch

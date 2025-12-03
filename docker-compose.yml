@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_service
+    restart: always
+
+    ports:
+      # Mappage du port: hôte:conteneur
+      - "27017:27017" 
+
+    volumes:
+      # Volume persistant pour les données
+      - mongodb_data:/data/db
+      
+  app:
+    build: . # <--- C'est ici que le Dockerfile est utilisé.
+    container_name: python_app_web
+    restart: always
+
+    ports:
+      # Mappage du port: hôte:conteneur (pour accéder à l'appli)
+      - "8501:8506" 
+
+    depends_on:
+      # Assure que MongoDB est lancé avant l'application
+      - mongodb
+
+volumes:
+  mongodb_data: 
+    driver: local
