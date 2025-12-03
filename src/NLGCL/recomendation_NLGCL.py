@@ -10,6 +10,15 @@ from recbole_gnn.utils import create_dataset, data_preparation, get_model, get_t
 import pandas as pd
 from pymongo import MongoClient
 
+def normalize_path(path: str) -> str:
+    """
+    If running on Linux, convert Windows-style backslashes to forward slashes.
+    Otherwise, return the path unchanged.
+    """
+    if os.name == "posix":  # Linux, macOS, etc.
+        return path.replace("\\", "/")
+    return path
+
 def recommend_topk(model, dataset, train_data, user_id, topk=30, device='cpu'):
     """
     Retourne le top-k items pour un utilisateur donné.
@@ -68,7 +77,8 @@ def setup_recbole_model(model_path, dataset_name, config_file_list):
     # --- 1. Charger la config ---
     config = Config(model="NLGCL", dataset=dataset_name, config_file_list=config_file_list)
     init_seed(config['seed'], config['reproducibility'])
-    config['data_path'] = 'NLGCL\\dataset\\game'
+    data_path = normalize_path('NLGCL\\dataset\\game')
+    config['data_path'] = data_path
 
     # --- 2. Suppression du cache pour forcer la recréation du Dataset ---
     dataset_dir = os.path.join(config['data_path'], dataset_name)
