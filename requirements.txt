@@ -18,7 +18,7 @@ colorama
 scikit-learn
 
 torch-geometric
-torch
+torch==2.8.0
 torchvision
 pyg_lib
 torch_scatter
@@ -28,3 +28,4 @@ torch_spline_conv
 transformers
 python-dotenv
 hf_xet
+kmeans_pytorch

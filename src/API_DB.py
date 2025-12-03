@@ -23,10 +23,6 @@ import numpy as np
 import traceback
 import os
 
-from NLGCL.recomendation_NLGCL import setup_recbole_model,recommend_topk
-from GenSar.recommender_service import recommender
-
-
 def normalize_path(path: str) -> str:
     """
     If running on Linux, convert Windows-style backslashes to forward slashes.
@@ -36,6 +32,8 @@ def normalize_path(path: str) -> str:
         return path.replace("\\", "/")
     return path
 
+from NLGCL.recomendation_NLGCL import setup_recbole_model,recommend_topk
+from GenSar.recommender_service import recommender
 recommender.load()
 rich_pretty.install()
 rich_traceback_install(show_locals=False)
@@ -95,11 +93,12 @@ db = client[db_name]
 #Load the model
 try:
     model_path = normalize_path("NLGCL\\saved\\NLGCL-Dec-02-2025_17-09-34.pth")
-    config_file_list = normalize_path("NLGCL\\properties\\game.yaml")
+    config_file_list = [normalize_path("NLGCL\\properties\\game.yaml")]
+    print(model_path,config_file_list)
     NLGCL_model, NLGCL_dataset, NLGCL_train_data, NLGCL_device = setup_recbole_model(
         model_path=model_path,
         dataset_name="game",
-        config_file_list=[config_file_list]
+        config_file_list=config_file_list
     )
 except Exception as e:
     print(f"\n--- ERREUR --- \nImpossible de charger les composants Recbole: {e}")

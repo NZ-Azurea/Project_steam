@@ -13,14 +13,13 @@ services:
       - API_BASE_PORT=27099
       - RUN_DB_IMPORT=1
 
-      # If your code also reads env vars directly:
       - DB_USER=User
       - DB_PASSWORD=Pass
       - DB_IP=mongo
       - DB_PORT=27017
       - DB_NAME=Steam_Project
     volumes:
-      - init-state:/init-state   # <-- new, for one-time marker
+      - init-state:/init-state
 
   mongo:
     image: mongo:7

@@ -1,5 +1,5 @@
-#!/bin/bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 cd /app
 
@@ -17,7 +17,7 @@ wait_for_mongo() {
 
 run_db_import_once() {
   # Marker will persist in /init-state (shared volume)
-  local marker_file="/init-state/db_initialized"
+  marker_file="/init-state/db_initialized"
 
   if [ "${RUN_DB_IMPORT:-1}" != "1" ]; then
     echo "[INIT] RUN_DB_IMPORT != 1, skipping DB import."
@@ -29,11 +29,11 @@ run_db_import_once() {
     return
   fi
 
-  echo "[INIT] Running DB_import.py --workers 4 --log-level WARNING"
-  if uv run src/DB_import.py --workers 4 --log-level WARNING; then
+  echo "[INIT] Running DB_import.py --workers 4 --log-level INFO"
+  if uv run src/DB_import.py --workers 4 --log-level INFO; then
     echo "[INIT] DB_import.py completed successfully, writing marker."
-    mkdir -p "$(dirname "${marker_file}")"
-    touch "${marker_file}"
+    mkdir -p "$(dirname "$marker_file")"
+    touch "$marker_file"
   else
     echo "[WARN] DB_import.py failed; NOT writing marker; will retry next start."
   fi
@@ -42,17 +42,17 @@ run_db_import_once() {
 _api_pid=""
 _streamlit_pid=""
 
-_term() {
-  if [ -n "${_api_pid}" ] && kill -0 "${_api_pid}" 2>/dev/null; then
+term_handler() {
+  if [ -n "${_api_pid}" ] 2>/dev/null && kill -0 "${_api_pid}" 2>/dev/null; then
     kill "${_api_pid}" || true
   fi
-  if [ -n "${_streamlit_pid}" ] && kill -0 "${_streamlit_pid}" 2>/dev/null; then
+  if [ -n "${_streamlit_pid}" ] 2>/dev/null && kill -0 "${_streamlit_pid}" 2>/dev/null; then
     kill "${_streamlit_pid}" || true
   fi
   wait || true
 }
 
-trap _term SIGINT SIGTERM
+trap term_handler INT TERM
 
 # 1) Wait for Mongo to be reachable
 wait_for_mongo
@@ -60,15 +60,21 @@ wait_for_mongo
 # 2) Initialize DB once
 run_db_import_once
 
-# 3) Start API
-uv run uvicorn API_DB:app --host 0.0.0.0 --port "${API_PORT}" &
+# 3) Start API (run from src like your bootstrap does)
+(
+  cd /app/src
+  uv run uvicorn API_DB:app --host 0.0.0.0 --port "${API_PORT}"
+) &
 _api_pid=$!
 
-# 4) Start Streamlit
-uv run streamlit run src/Application/app.py \
-  --server.port 8501 \
-  --server.address 0.0.0.0 &
+# 4) Start Streamlit (run from project root)
+(
+  cd /app
+  uv run streamlit run src/Application/app.py \
+    --server.port 8501 \
+    --server.address 0.0.0.0
+) &
 _streamlit_pid=$!
 
-# 5) Wait
-wait -n "${_api_pid}" "${_streamlit_pid}" || true
+# 5) Wait for either process to exit
+wait
