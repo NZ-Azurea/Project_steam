@@ -43,8 +43,8 @@ RUN uv venv .venv -p 3.13.7 && \
 EXPOSE 8501
 EXPOSE 27099
 
-# Entrypoint script (starts Mongo init + API + Streamlit)
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# Entrypoint script (starts DB init + API + Streamlit)
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/docker-entrypoint.sh"]
