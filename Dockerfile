@@ -1,4 +1,3 @@
-# Dockerfile
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -19,22 +18,21 @@ WORKDIR /app
 # Copy project
 COPY . /app
 
-# Ensure src/.env exists with (container-friendly) defaults
-# We only create it if it doesn't exist already.
-RUN mkdir -p src && \
-    if [ ! -f src/.env ]; then \
-      cat > src/.env << 'EOF'
-API_BASE_IP=localhost
-API_BASE_PORT=27099
-DB_USER=User
-DB_PASSWORD=Pass
-DB_IP=mongo
-DB_PORT=27017
-DB_NAME=Steam_Project
-EOF \
-    ; fi
+# Ensure src/.env exists with container-friendly defaults.
+# We avoid heredoc and use printf instead (more robust on Windows).
+RUN mkdir -p src \
+ && if [ ! -f src/.env ]; then \
+      printf '%s\n' \
+'API_BASE_IP=localhost' \
+'API_BASE_PORT=27099' \
+'DB_USER=User' \
+'DB_PASSWORD=Pass' \
+'DB_IP=mongo' \
+'DB_PORT=27017' \
+'DB_NAME=Steam_Project' > src/.env; \
+    fi
 
-# Create venv with uv and install deps (build-time, so runtime is instant)
+# Create venv with uv and install deps (build-time)
 RUN uv venv .venv -p 3.13.7 && \
     uv pip install -r requirements.txt
 
