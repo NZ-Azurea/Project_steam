@@ -29,8 +29,8 @@ run_db_import_once() {
     return
   fi
 
-  echo "[INIT] Running DB_import.py --workers 4 --log-level WARNING"
-  if uv run src/DB_import.py --workers 4 --log-level WARNING; then
+  echo "[INIT] Running DB_import.py --workers 4 --log-level INFO"
+  if uv run src/DB_import.py --workers 4 --log-level INFO; then
     echo "[INIT] DB_import.py completed successfully, writing marker."
     mkdir -p "$(dirname "$marker_file")"
     touch "$marker_file"
