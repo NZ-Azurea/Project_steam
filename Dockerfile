@@ -1,30 +1,50 @@
-# ÉTAPE 1: Image de base officielle et légère
-# Remplacer 'node:20-alpine' par 'python:3.12-alpine' pour une image Python officielle et minimale.
-FROM python:3.13-rc-slim
+FROM ubuntu:24.04
 
-RUN pip install --no-cache-dir uv
+ENV DEBIAN_FRONTEND=noninteractive
 
-# ÉTAPE 2: Définir le répertoire de travail dans le conteneur
+# System deps
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates \
+        build-essential \
+        netcat-openbsd \
+        git && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# uv is installed into /root/.local/bin (and sometimes /root/.cargo/bin); add them to PATH
+ENV PATH="/root/.local/bin:/root/.cargo/bin:${PATH}"
+
 WORKDIR /app
 
-# ÉTAPE 3: Copier le fichier de dépendances Python uniquement
-# Cela permet à Docker de mettre en cache cette étape si le fichier requirements.txt ne change pas.
-COPY requirements.txt ./
+# Copy project files into image
+COPY . /app
 
-# ÉTAPE 4: Installer les dépendances Python
-# Utiliser 'pip install' au lieu de 'npm install'. Le flag --no-cache-dir réduit la taille de l'image.
-RUN uv pip install --system --no-cache-dir -r requirements.txt
+# Ensure src/.env exists with container-friendly defaults (only if missing)
+RUN mkdir -p src \
+ && if [ ! -f src/.env ]; then \
+      printf '%s\n' \
+'API_BASE_IP=localhost' \
+'API_BASE_PORT=27099' \
+'DB_USER=User' \
+'DB_PASSWORD=Pass' \
+'DB_IP=mongo' \
+'DB_PORT=27017' \
+'DB_NAME=Steam_Project' > src/.env; \
+    fi
 
-# ÉTAPE 5: Copier le reste du code de l'application
-# Le point '.' final indique de copier le contenu du répertoire de contexte vers /app dans le conteneur.
-COPY . .
+# Create uv venv and install Python dependencies at build time
+RUN uv venv .venv -p 3.13.7 && \
+    uv pip install -r requirements.txt
 
-# ÉTAPE 6: Exposer le port de l'application
-# Si votre application Python (par exemple, Flask/Django) écoute sur un port spécifique.
-EXPOSE 5000 
+# Expose app ports
+EXPOSE 8501
+EXPOSE 27099
 
-# ÉTAPE 7: Commande de démarrage
+# Entrypoint script (starts DB init + API + Streamlit)
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
-# Remplacez 'app.py' par le nom de votre fichier d'entrée principal.
-RUN chmod +x start.sh
-CMD ["tail", "-f", "/dev/null"]
+ENTRYPOINT ["/bin/bash", "/docker-entrypoint.sh"]
