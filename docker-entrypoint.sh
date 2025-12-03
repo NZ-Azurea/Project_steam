@@ -1,5 +1,5 @@
-#!/bin/sh
-set -eu
+#!/bin/bash
+set -euo pipefail
 
 cd /app
 
@@ -17,7 +17,7 @@ wait_for_mongo() {
 
 run_db_import_once() {
   # Marker will persist in /init-state (shared volume)
-  marker_file="/init-state/db_initialized"
+  local marker_file="/init-state/db_initialized"
 
   if [ "${RUN_DB_IMPORT:-1}" != "1" ]; then
     echo "[INIT] RUN_DB_IMPORT != 1, skipping DB import."
@@ -32,8 +32,8 @@ run_db_import_once() {
   echo "[INIT] Running DB_import.py --workers 4 --log-level WARNING"
   if uv run src/DB_import.py --workers 4 --log-level WARNING; then
     echo "[INIT] DB_import.py completed successfully, writing marker."
-    mkdir -p "$(dirname "$marker_file")"
-    touch "$marker_file"
+    mkdir -p "$(dirname "${marker_file}")"
+    touch "${marker_file}"
   else
     echo "[WARN] DB_import.py failed; NOT writing marker; will retry next start."
   fi
@@ -42,17 +42,17 @@ run_db_import_once() {
 _api_pid=""
 _streamlit_pid=""
 
-term_handler() {
-  if [ -n "${_api_pid}" ] 2>/dev/null && kill -0 "${_api_pid}" 2>/dev/null; then
+_term() {
+  if [ -n "${_api_pid}" ] && kill -0 "${_api_pid}" 2>/dev/null; then
     kill "${_api_pid}" || true
   fi
-  if [ -n "${_streamlit_pid}" ] 2>/dev/null && kill -0 "${_streamlit_pid}" 2>/dev/null; then
+  if [ -n "${_streamlit_pid}" ] && kill -0 "${_streamlit_pid}" 2>/dev/null; then
     kill "${_streamlit_pid}" || true
   fi
   wait || true
 }
 
-trap term_handler INT TERM
+trap _term SIGINT SIGTERM
 
 # 1) Wait for Mongo to be reachable
 wait_for_mongo
@@ -70,5 +70,5 @@ uv run streamlit run src/Application/app.py \
   --server.address 0.0.0.0 &
 _streamlit_pid=$!
 
-# 5) Wait for either process to exit
-wait
+# 5) Wait
+wait -n "${_api_pid}" "${_streamlit_pid}" || true
