@@ -2,24 +2,27 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# System deps
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        curl ca-certificates build-essential \
+        curl \
+        ca-certificates \
+        build-essential \
         netcat-openbsd \
-        git \
-    && rm -rf /var/lib/apt/lists/*
+        git && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
+# uv is installed into /root/.local/bin (and sometimes /root/.cargo/bin); add them to PATH
+ENV PATH="/root/.local/bin:/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
-# Copy project
+# Copy project files into image
 COPY . /app
 
-# Ensure src/.env exists with container-friendly defaults.
-# We avoid heredoc and use printf instead (more robust on Windows).
+# Ensure src/.env exists with container-friendly defaults (only if missing)
 RUN mkdir -p src \
  && if [ ! -f src/.env ]; then \
       printf '%s\n' \
@@ -32,13 +35,15 @@ RUN mkdir -p src \
 'DB_NAME=Steam_Project' > src/.env; \
     fi
 
-# Create venv with uv and install deps (build-time)
+# Create uv venv and install Python dependencies at build time
 RUN uv venv .venv -p 3.13.7 && \
     uv pip install -r requirements.txt
 
+# Expose app ports
 EXPOSE 8501
 EXPOSE 27099
 
+# Entrypoint script (starts Mongo init + API + Streamlit)
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
