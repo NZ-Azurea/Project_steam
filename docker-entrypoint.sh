@@ -1,13 +1,15 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 cd /app
 
 API_PORT="${API_BASE_PORT:-27099}"
+DB_IP="${DB_IP:-mongo}"
+DB_PORT="${DB_PORT:-27017}"
 
 wait_for_mongo() {
-  echo "[INIT] Waiting for MongoDB at ${DB_IP:-mongo}:${DB_PORT:-27017}..."
-  while ! nc -z "${DB_IP:-mongo}" "${DB_PORT:-27017}" >/dev/null 2>&1; do
+  echo "[INIT] Waiting for MongoDB at ${DB_IP}:${DB_PORT}..."
+  while ! nc -z "${DB_IP}" "${DB_PORT}" >/dev/null 2>&1; do
     sleep 1
   done
   echo "[INIT] MongoDB is up."

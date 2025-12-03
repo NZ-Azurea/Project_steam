@@ -6,3 +6,5 @@ data/games.json
 data/Game Reviews.zip
 log_tensorboard
 .env
+src/agent_ai
+src/Application/pages/chatbot.py

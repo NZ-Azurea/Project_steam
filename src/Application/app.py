@@ -35,7 +35,7 @@ st.title("Bienvenue sur l'application !")
 
 
 # Boutons centrés en grille
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     if st.button("🔐 Login"):
         st.switch_page("pages/login.py")
@@ -52,7 +52,9 @@ with col3:
     #     st.switch_page("pages/chatbot.py")
     # if st.button("❓ Questionnaire"):
     #     st.switch_page("pages/question.py")
-    
+with col4:
+    if st.button("💬 Chatbot"):
+        st.switch_page("pages/chatbot.py")
 # --- Récupération des données via ton API Mongo ---
 
 ####
