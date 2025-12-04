@@ -66,3 +66,28 @@ This diagram illustrates the **full bootstrap process** designed for a **local d
       * **Customizable DB Import:** If confirmed, it runs `DB_import.py`, allowing the user to customize parameters like the number of workers, index creation, and log level.
       * **Optional Model Training:** It asks for confirmation to **retrain the NLGCL and GenSar models**, executing the respective training scripts if accepted.
       * **Local Service Launch:** It attempts to **start the local MongoDB service** and then launches the API (`uvicorn`) and Streamlit application in the background.
+
+Je comprends que ces pages font partie de votre application **Streamlit**, qui sert d'interface utilisateur pour votre système de recommandation de jeux Steam.
+
+Ces modules et leur architecture de navigation correspondent directement aux différentes vues (ou pages) que l'utilisateur verra dans l'application.
+
+
+## 5\. Web Architecture Diagram (Steam Game Recommendation)
+
+**Diagram:**
+
+![The site architecture](assets/Diagram_site.png)
+
+This diagram illustrates the **navigation flow and core modules** of the user interface (UI), which facilitates Steam game recommendations and interactions. **These modules directly represent the different pages or views within your Streamlit application.**
+
+  * **Home:** This is the **central entry point** and the main landing **page of the Streamlit application**. It likely displays featured games, personalized recommendations, and provides navigation to all other modules.
+  * **Login:** The **authentication page** where users log in to access personalized data and recommendations based on their history.
+  * **Personal Library:** The **Streamlit page** that displays the **user's collection of owned or previously reviewed Steam games**. This data is crucial for the recommendation models.
+  * **Research (Search/Discovery):** The **search page** providing filtering functionality for exploring the Steam game catalogue. This module likely links to the underlying **MongoDB data**.
+  * **Game Shop:** Represents the **game detail pages or the catalogue view**. Users navigate here to view information, reviews, and potentially purchase games.
+  * **ChatBot:** An **interactive agent** that communicates with the user from the Home page. Given the project's focus, the ChatBot's primary function is likely to:
+      * Provide **natural language recommendations** based on user input (leveraging the NLGCL or GenSar models).
+      * Direct the user to the **Research** module to refine a search query.
+      * Provide quick facts about games in the **Game Shop**.
+
+The flows indicate a tightly integrated system where user activity (Login, Library, Research) feeds the central **Home** experience, which in turn drives interactions with the **recommendation-focused ChatBot**.
