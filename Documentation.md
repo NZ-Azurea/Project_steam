@@ -2,7 +2,8 @@
 
 ### 1. Global Architecture Diagram
 
-**Diagram:** 
+**Diagram:**
+
 ![Global architecture](assets/Diagram_global_archi.png)
 
 This diagram illustrates the **overall workflow and component interaction** of the project.
@@ -17,6 +18,7 @@ The **API (Application Programming Interface)** acts as the central hub, mediati
 ### 2. Docker Architecture Diagram
 
 **Diagram:** 
+
 ![Docker architecture](assets/Diagram_docker_archi.png)
 
 This diagram shows how the entire application is containerized using Docker, focusing on isolation and deployment.
@@ -32,6 +34,7 @@ This containerization approach ensures that the application is **portable**, **s
 ### 3. The `entrypoint.sh` Function Diagram
 
 **Diagram:**
+
 ![The entrypoint.sh function](assets/Diagram_entrypoint_sh.png)
 
 This diagram likely describes the **initial execution flow** when a Docker container (probably the API or a core service) is started.
@@ -47,6 +50,7 @@ Common actions within an `entrypoint.sh` include:
 ### 4. The `start.sh` Function Diagram
 
 **Diagram:** 
+
 ![The start.sh function](assets/Diagram_start_sh.png)
 
 This diagram illustrates the **main execution phase** of a core service (likely replacing the steps in the initial Bash bootstrap script for a production/containerized environment).
