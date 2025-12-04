@@ -62,6 +62,11 @@ chmod +x /start.sh
 uv run uvicorn start.sh
 ```
 
+To see the result. Go to yoyr web-browser and write:
+
+```bash
+http://localhost:8501/
+```
 
 
 
