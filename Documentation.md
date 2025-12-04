@@ -25,45 +25,44 @@ This diagram shows how the entire application is containerized using Docker, foc
 
 It highlights that each major component runs within its own container, managed by Docker Compose (implied by the multi-container setup):
 
-* **Streamlit Container:** Hosts the user interface.
-* **API Container:** Hosts the central application logic (e.g., Uvicorn server).
+
+* **API Container:** Hosts the central application logic (e.g., Uvicorn server) and the user interface.
 * **MongoDB Container:** Hosts the database instance.
 
 This containerization approach ensures that the application is **portable**, **scalable**, and that dependencies for each service are kept isolated. Communication between these components happens over the Docker network.
 
-### 3. The `entrypoint.sh` Function Diagram
+Absolument. Je vais vous fournir la description du contenu de `start.sh` et de `docker-entrypoint.sh` en utilisant le même format et en m'appuyant sur les fichiers et diagrammes que vous avez fournis.
+
+
+### 3\. The `docker-entrypoint.sh` Script (Docker Initialization)
 
 **Diagram:**
 
 ![The entrypoint.sh function](assets/Diagram_entrypoint_sh.png)
 
-This diagram likely describes the **initial execution flow** when a Docker container (probably the API or a core service) is started.
+This diagram describes the **initial, mandatory execution flow** when a Docker container is started.
 
-The `entrypoint.sh` script defines the primary command that runs when the container first launches. Its typical purpose is to perform essential initialization tasks before starting the main application process.
+The `docker-entrypoint.sh` script is designed for **automatic, one-time setup and service launch** required by the Docker environment. Its primary role is to ensure dependencies are met before starting the application and to handle clean process shutdown.
 
-Common actions within an `entrypoint.sh` include:
-* Waiting for the database (MongoDB) to be ready.
-* Running database migrations or setup scripts.
-* Setting up environment variables.
-* Finally, executing the `start.sh` script or the main application command.
+  * **Role in Docker (Automatic Launch):** It acts as the container's *initializer*. It performs essential environment preparation that must run **automatically** upon container start.
+  * **Key Actions:**
+      * **Dependency Readiness:** It **waits for the MongoDB container to be ready** using a network check (`nc -z`).
+      * **Conditional DB Import:** It runs `DB_import.py` to populate the database **only once** by checking for the presence of a persistent marker file (`/init-state/db_initialized`) in a shared volume.
+      * **Process Management:** It defines a `term_handler` to enable a **clean shutdown** of background processes (API and Streamlit) when the container stops.
+      * **Service Launch:** It launches both the **API backend (Uvicorn)** and the **Streamlit application** in the background, ensuring both core services are running.
 
-### 4. The `start.sh` Function Diagram
+### 4\. The `start.sh` Script (Local/Manual Bootstrap)
 
-**Diagram:** 
+**Diagram:**
 
 ![The start.sh function](assets/Diagram_start_sh.png)
 
-This diagram illustrates the **main execution phase** of a core service (likely replacing the steps in the initial Bash bootstrap script for a production/containerized environment).
+This diagram illustrates the **full bootstrap process** designed for a **local development environment** (outside of Docker). This script is highly **interactive** and handles creating the environment, optional setup, and service launch.
 
-The `start.sh` script is responsible for initiating the application process itself after the necessary environment has been prepared by `entrypoint.sh`.
-
-It typically includes the commands to:
-* Run the Python API server (e.g., `uvicorn API_DB:app`).
-* In a multi-service container (less common but possible), it could also launch the Streamlit app.
-* It ensures the core services of that specific container are running and listening for connections.
-
----
-
-**Summary of the Workflow:** The Dockerized architecture enables an efficient deployment where `entrypoint.sh` handles setup and dependency checks, and then calls `start.sh` to run the main service, all orchestrated by the central API communicating with the Streamlit UI and MongoDB.
-
-Is there any specific component or process you would like further details on?
+  * **Role (Local Bootstrap/Maintenance):** It is an **interactive setup script** designed to be run manually by a developer on the host machine. It handles environment creation and prompts the user for major, time-consuming setup steps like model training.
+  * **Key Actions:**
+      * **Environment Creation:** It checks for and **creates the Python virtual environment** (`.venv`) and installs dependencies. It also ensures the local configuration file (`src/.env`) exists.
+      * **Interactive Setup:** It prompts the user for confirmation (`prompt_yes`) to run the **optional global setup** (Step 3).
+      * **Customizable DB Import:** If confirmed, it runs `DB_import.py`, allowing the user to customize parameters like the number of workers, index creation, and log level.
+      * **Optional Model Training:** It asks for confirmation to **retrain the NLGCL and GenSar models**, executing the respective training scripts if accepted.
+      * **Local Service Launch:** It attempts to **start the local MongoDB service** and then launches the API (`uvicorn`) and Streamlit application in the background.
