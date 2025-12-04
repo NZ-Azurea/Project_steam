@@ -1,9 +1,5 @@
 ## 📄 Project Architecture Documentation
 
-Here is a description of the provided diagrams in English.
-
----
-
 ### 1. Global Architecture Diagram
 
 **Diagram:** 
