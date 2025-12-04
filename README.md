@@ -64,33 +64,6 @@ chmod +x /start.sh
 uv run uvicorn start.sh
 ```
 
-🧠 Model Training
-
-To retrain the Machine Learning models (NLGCL or GenSar).
-
-1. Access the Container
-
-Access the Bash shell of the application container:
-
-``` bash
-docker exec -it steam_app bash
-```
-
-2. Retrain the NLGCL Model
-
-Run the training script for the NLGCL (Natural Language Generation and Classification) model:
-
-``` bash
-uv run uvicorn src/NLGCL/main.py
-```
-
-3. Retrain the GenSar Model
-
-Run the training script for the GenSar model:
-
-``` bash
-uv run uvicorn src/GenSar/train_gensar.py
-```
 
 
 
