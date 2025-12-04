@@ -10,8 +10,9 @@ To ensure all large files are downloaded correctly, you must have Git Large File
 
 If necessary, install Git LFS and initialize it:
 
+```bash
 git lfs install
-
+```
 
 2. Clone the Repository
 
