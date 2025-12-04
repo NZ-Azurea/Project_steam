@@ -1,4 +1,4 @@
-Steam Project: Analysis and Generation
+#Steam Project: Analysis and Generation
 
 ## Authors
 - Rémy Chen
