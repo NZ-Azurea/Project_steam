@@ -6,7 +6,7 @@ import time
 load_state_from_query()
 ensure_key_in_query("User")
 
-st.set_page_config(page_title="Login", page_icon="🔐")
+st.set_page_config(page_title="Login", page_icon="🔐",layout="centered")
 
 # --- Cacher la sidebar ---
 hide_sidebar_style = """
