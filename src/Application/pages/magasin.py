@@ -4,10 +4,11 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parents[1]  # ...\src
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
-from library_api_connector import get_default_game_reco, get_game_info
+from library_api_connector import get_game_info,search_reviews_connector
 from Library_fonctions import save_key_to_query,load_state_from_query,ensure_key_in_query
 from Library_fonctions import load_state_from_web_storage, save_state_to_web_storage
 from st_clickable_images import clickable_images
+from datetime import datetime
 
 STORAGE_KEY = "magasin_Page"
 PERSIST_KEYS = ["game_data"]
@@ -93,6 +94,27 @@ if cookie_game_id !=None:
         st.divider()
         st.markdown("### 📝 À propos du jeu")
         st.write(game_data.get("about_the_game", "Aucune description disponible."))
+        if "number_of_reviews" not in st.session_state:
+            st.session_state["number_of_reviews"] = 15
+        st.write("## Critiques des utilisateurs")
+        st.write("---")
+        # st.write(search_reviews_connector(game_data.get("_id"),n=st.session_state["number_of_reviews"])[1]["reviews"][0].keys())
+        for review in search_reviews_connector(game_data.get("_id"),n=st.session_state["number_of_reviews"])[1]["reviews"]:
+            with st.container(border=True):
+                col1, col2 = st.columns([9, 1], gap="small")
+                with col1:
+                    st.write(f"**{review["user"]}**")
+                    st.write(f"play time: {review['playtime']}h")
+                with col2:
+                    if review["recommend"]:
+                        st.markdown("# ✅")
+                    else:
+                        st.markdown("❌")
+                st.write(review["review_text"])
+                st.write(f"poste date: {datetime.strptime(review['post_date'], "%Y-%m-%dT%H:%M:%S").strftime("%d %B %Y, %H:%M")}")
+        if st.button("Voir plus de critiques"):
+            st.session_state["number_of_reviews"] += 10
+            st.rerun()
     else:
         st.warning("Le jeu n’a pas pu être trouvé dans la base de données.")
 else:

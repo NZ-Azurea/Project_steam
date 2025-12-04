@@ -7,9 +7,11 @@ pymongo
 streamlit
 httpx
 st-clickable-images
+streamlit-option-menu
 rich
 streamlit-js-eval
 streamlit_cookies_controller
+st_click_detector
 extra_streamlit_components
 colorlog
 tensorboard

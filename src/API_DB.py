@@ -310,7 +310,7 @@ def recommandation():
 
     try:
         # Example: { "ping": 1 } or { "serverStatus": 1 }
-        result = db.games.find({},{}).sort({ "positive": -1, "_id": 1 }).limit(12)
+        result = db.games.find({},{}).sort({ "positive": -1, "_id": 1 }).limit(200)
         missing_asset = []
         result = [game for game in result]
         for game in result:
