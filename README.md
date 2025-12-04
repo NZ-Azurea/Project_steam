@@ -5,9 +5,7 @@ Welcome to the Steam data analysis and generation project repository. This proje
 Quick Start
 
 ***warning:The project requires **45 GB** of total storage space.
-
 The initial database operations (import and indexing) are intensive and can take up to **30 minutes** on a high-performance computer. **We have not tested the setup on configurations with less than 64 GB of RAM, and we strongly recommend a minimum of 64 GB of RAM** for running the application and its associated models efficiently.
-
 For reference, with our specific high-end configuration (Ryzen 9 9950x3d, 192 GB RAM, and an RTX 5080), the complete application startup time, including all database processing, is approximately **15 minutes**.***
 
 To ensure all large files are downloaded correctly, you must have Git Large File Storage (LFS) installed.
