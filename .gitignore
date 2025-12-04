@@ -8,3 +8,4 @@ log_tensorboard
 .env
 src/agent_ai
 src/Application/pages/chatbot.py
+models
