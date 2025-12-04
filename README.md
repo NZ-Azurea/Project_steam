@@ -90,7 +90,7 @@ You need the following prerequisites installed and running on your system:
   * **LLAMA-Server**
       * The **LLAMA-Server** must be compiled and exposed. This server is necessary to run the machine learning models (like NLGCL or GenSar) used by the API.
 
-You also need to create the .venv and dowload the libraries:
+You also need to create the .venv  of python 3.13.7 and dowload the libraries:
 
 For Linux:
 
