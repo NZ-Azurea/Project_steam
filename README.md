@@ -99,8 +99,3 @@ start.bat
 ```
 
 
-Voulez-vous que je traduise et intègre cette section dans votre documentation existante ?
-
-
-
-
