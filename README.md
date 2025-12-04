@@ -7,9 +7,10 @@
 - Lucas Lorang
 - victor Papin
 
-Welcome to the Steam data analysis and generation project repository. This project is configured for easy deployment using Docker.
 
 ## Quick Start
+
+Welcome to the Steam data analysis and generation project repository. This project is configured for easy deployment using Docker.
 
 ***warning:The project requires **45 GB** of total storage space.***
 
