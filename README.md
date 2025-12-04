@@ -73,13 +73,13 @@ Local Development Setup (Without Docker)
 
 ***Warning: This setup is generally NOT RECOMMENDED for production and is provided for development or debugging purposes only. Use the Docker setup for the most stable and reproducible environment.***
 
-To run the application directly on your host machine (as demonstrated by the `./start.sh` script), you must manually ensure that all external dependencies and services are running and accessible.
+To run the application directly on your host machine (as demonstrated by the `./start.sh` or `start.bat` script), you must manually ensure that all external dependencies and services are running and accessible.
 
 You need the following prerequisites installed and running on your system:
 
   * **UV (Python Environment Manager)**
       * You need the **`uv`** tool (used for environment and dependency management).
-  * **MongoDB Instance**
+  * **MongoDB Instance with autentification**
       * A local **MongoDB database instance** must be installed and running (accessible, typically on `localhost:27017`). The application relies on it for data persistence.
   * **LLAMA-Server**
       * The **LLAMA-Server** must be compiled and exposed. This server is necessary to run the machine learning models (like NLGCL or GenSar) used by the API.
