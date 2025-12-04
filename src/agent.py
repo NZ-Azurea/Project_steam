@@ -47,6 +47,7 @@ def _raw_llm_request(messages: List[Dict[str, str]], stream: bool = True, temper
         "messages": messages,
         "stream": stream,
         "temperature": temperature,
+        "n_predict": 1024,
     }
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
@@ -115,6 +116,25 @@ def _filter_thought_process(generator: Iterator[str]) -> Iterator[str]:
         clean_fallback = buffer.replace("<|channel|>analysis<|message|>", "")
         yield clean_fallback
 
+Fonction_Structure="""
+    n: int,
+    max_price: Optional[float] = None,
+    name_contains: Optional[str] = None,
+    categories: Optional[List[str]] = None,
+    genres: Optional[List[str]] = None,
+    min_negative: Optional[int] = None,
+    max_negative: Optional[int] = None,
+    min_positive: Optional[int] = None,
+    max_positive: Optional[int] = None,
+    release_date_from: Optional[str] = None,  # ISO string, e.g. "2023-01-01T00:00:00" (le formatage...)
+    release_date_to: Optional[str] = None,
+    min_required_age: Optional[int] = None,
+    max_required_age: Optional[int] = None,
+    required_tags: Optional[List[str]] = None,
+    verbose: bool = False,
+"""
+return_structure="""{{"need_function_tag": <bool>, "parameters": <dict of parameters> }}"""
+
 def _get_router_decision(user_message: str, history_str: str) -> Dict[str, Any]:
     """Routeur JSON strict."""
     router_prompt = f"""
@@ -125,12 +145,24 @@ def _get_router_decision(user_message: str, history_str: str) -> Dict[str, Any]:
     - Tags (partial): {TAGS_LIST}...
     
     TASK:
-    Convert the user input into a JSON search query.
-    
+    Convert the user input into a JSON search query under this format:{return_structure}
+    the parameters filed can contain any of the following fields (all optional except n):
+    {Fonction_Structure}
+
+    With the following rules:
+    required_tags and categories can only use the available metadata listed above.
+    when user asks for games that are like other games, please search more game than ask (increase n) because the game compared game might be return by the search engine.
+    if the user request is about a previous game, please think about its tags and categories and use them in the search.
+
     EXAMPLES:
     User: "How much is Borderlands 3?" -> Response: {{ "need_function_tag": true, "parameters": {{ "n": 1, "name_contains": "Borderlands 3" }} }}
     User: "Give me 5 horror games" -> Response: {{ "need_function_tag": true, "parameters": {{ "n": 5, "required_tags": ["Horror"] }} }}
     User: "Hello" -> Response: {{ "need_function_tag": false, "parameters": {{}} }}
+    user: "Give me 10 games like phasmophobia" -> Response: {{ "need_function_tag": true, "parameters": {{ "n": 15, "required_tags": ["Horror"] }} }}
+
+    Bad EXAMPLE (DO NOT DO THIS):
+    user: "Give me 10 games like phasmophobia" -> Response: {{ "need_function_tag": true, "parameters": {{ "n": 10, "required_tags": ["phasmophobia"] }} }}
+    explaination: "phasmophobia" is not a tag, it's a game name.
 
     ---
     HISTORY: {history_str}
@@ -144,7 +176,7 @@ def _get_router_decision(user_message: str, history_str: str) -> Dict[str, Any]:
     for chunk in _raw_llm_request(messages, stream=True, temperature=0.0, json_mode=True):
         full_response += chunk
         
-    print(f"\n🧠 [ROUTER RAW]: {full_response}\n") # DEBUG
+    # print(f"\n🧠 [ROUTER RAW]: {full_response}\n") # DEBUG
     
     # Nettoyage
     start = full_response.find("{")
