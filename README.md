@@ -17,10 +17,10 @@ git lfs install
 
 Clone the repository:
 
-""" bash
+``` bash
 git clone https://github.com/NZ-Azurea/Project_steam.git
 cd Project_steam
-"""
+```
 
 🐳 Execution via Docker (Recommended Method)
 
@@ -30,17 +30,17 @@ This method uses docker compose to build and run the application in a single ste
 
 Build the Docker image. The --no-cache option is recommended for a fresh build:
 
-""" bash
+``` bash
 docker compose build --no-cache
-"""
+```
 
 2. Launch the Application
 
 Run the application in detached mode (-d):
 
-""" bash
+``` bash
 docker compose up -d
-"""
+```
 
 ⚙️ Manual Execution (Troubleshooting)
 
@@ -50,18 +50,18 @@ If running via docker compose up encounters issues.
 
 Enter the Bash shell of the application container:
 
-""" bash
+``` bash
 docker exec -it steam_app bash
-"""
+```
 
 2. Run the Application
 
 Once inside the container, grant execution rights and run the application with Uvicorn:
 
-""" bash
+``` bash
 chmod +x /start.sh
 uv run uvicorn start.sh
-"""
+```
 
 🧠 Model Training
 
@@ -71,22 +71,31 @@ To retrain the Machine Learning models (NLGCL or GenSar).
 
 Access the Bash shell of the application container:
 
-""" bash
+``` bash
 docker exec -it steam_app bash
-"""
+```
 
 2. Retrain the NLGCL Model
 
 Run the training script for the NLGCL (Natural Language Generation and Classification) model:
 
-""" bash
+``` bash
 uv run uvicorn src/NLGCL/main.py
-"""
+```
 
 3. Retrain the GenSar Model
 
 Run the training script for the GenSar model:
 
-""" bash
+``` bash
 uv run uvicorn src/GenSar/train_gensar.py
-"""
+```
+
+
+
+
+
+
+
+
+
