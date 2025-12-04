@@ -1,5 +1,12 @@
 Steam Project: Analysis and Generation
 
+## Authors
+- Rémy Chen
+- Pavan Wickramasinghage
+- Hadrien Lagadec
+- Lucas Lorang
+- victor Papin
+
 Welcome to the Steam data analysis and generation project repository. This project is configured for easy deployment using Docker.
 
 Quick Start
@@ -92,19 +99,21 @@ You need the following prerequisites installed and running on your system:
 
 You also need to create the .venv  of python 3.13.7 and dowload the libraries:
 
-For Linux:
+For example Linux:
 
 ```bash
 uv venv .venv -p cpython-3.13.7-linux-x86_64-gnu
 uv pip install -r requirements.txt
 ```
 
-For windows:
+For example windows:
 
 ```bash
 uv venv .venv -p cpython-3.13.7-windows-x86_64-none
 uv pip install -r requirements.txt
 ```
+
+For other instance please refert to uv [documentation](https://docs.astral.sh/uv/)
 
 Once these prerequisites are met, you can use the project's bootstrap script to finish the setup:
 
