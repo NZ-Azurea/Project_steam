@@ -92,6 +92,15 @@ You need the following prerequisites installed and running on your system:
 
 You also need to create the .venv and dowload the libraries:
 
+For Linux and Mac:
+
+```bash
+uv venv .venv -p cpython-3.13.7-linux-x86_64-gnu
+uv pip install -r requirements.txt
+```
+
+For windows:
+
 ```bash
 uv venv .venv -p cpython-3.13.7-windows-x86_64-none
 uv pip install -r requirements.txt
@@ -99,7 +108,7 @@ uv pip install -r requirements.txt
 
 Once these prerequisites are met, you can use the project's bootstrap script to finish the setup:
 
-On Linux or Mac:
+On Linux and Mac:
 
 ```bash
 ./start.sh
