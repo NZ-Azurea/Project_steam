@@ -1,8 +1,8 @@
-🎮 Steam Project: Analysis and Generation
+Steam Project: Analysis and Generation
 
 Welcome to the Steam data analysis and generation project repository. This project is configured for easy deployment using Docker.
 
-🚀 Quick Start
+Quick Start
 
 To ensure all large files are downloaded correctly, you must have Git Large File Storage (LFS) installed.
 
@@ -23,13 +23,13 @@ git clone https://github.com/NZ-Azurea/Project_steam.git
 cd Project_steam
 ```
 
-🐳 Execution via Docker (Recommended Method)
+Execution via Docker (Recommended Method)
 
 This method uses docker compose to build and run the application in a single step.
 
 1. Build the Container
 
-Build the Docker image. The --no-cache option is recommended for a fresh build:
+Build the Docker image.
 
 ``` bash
 docker compose build --no-cache
@@ -37,15 +37,13 @@ docker compose build --no-cache
 
 2. Launch the Application
 
-Run the application in detached mode (-d):
-
 ``` bash
 docker compose up -d
 ```
 
-⚙️ Manual Execution (Troubleshooting)
+Manual Execution (Troubleshooting)
 
-If running via docker compose up encounters issues.
+If running via docker compose up encounters issues or to retrain the models.
 
 1. Access the Container
 
