@@ -8,7 +8,7 @@ To ensure all large files are downloaded correctly, you must have Git Large File
 
 1. Prerequisites: Install Git LFS
 
-If necessary, install Git LFS and initialize it:
+Install Git LFS and initialize it:
 
 ```bash
 git lfs install
