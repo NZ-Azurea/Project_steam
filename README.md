@@ -90,6 +90,13 @@ You need the following prerequisites installed and running on your system:
   * **LLAMA-Server**
       * The **LLAMA-Server** must be compiled and exposed. This server is necessary to run the machine learning models (like NLGCL or GenSar) used by the API.
 
+You also need to create the .venv and dowload the libraries:
+
+```bash
+uv venv .venv -p cpython-3.13.7-windows-x86_64-none
+uv pip install -r requirements.txt
+```
+
 Once these prerequisites are met, you can use the project's bootstrap script to finish the setup:
 
 On Linux or Mac:
