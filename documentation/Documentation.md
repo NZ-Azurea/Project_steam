@@ -86,7 +86,7 @@ This diagram illustrates the **navigation flow and core modules** of the user in
   * **Research (Search/Discovery):** The **search page** providing filtering functionality for exploring the Steam game catalogue. This module likely links to the underlying **MongoDB data**.
   * **Game Shop:** Represents the **game detail pages or the catalogue view**. Users navigate here to view information, reviews, and potentially purchase games.
   * **ChatBot:** An **interactive agent** that communicates with the user from the Home page. Given the project's focus, the ChatBot's primary function is likely to:
-      * Provide **natural language recommendations** based on user input (leveraging the NLGCL or GenSar models).
+      * Provide **natural language recommendations** based on user input.
       * Direct the user to the **Research** module to refine a search query.
       * Provide quick facts about games in the **Game Shop**.
 
