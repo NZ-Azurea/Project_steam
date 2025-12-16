@@ -7,3 +7,5 @@ data/Game Reviews.zip
 log_tensorboard
 .env
 models
+*.gguf
+models

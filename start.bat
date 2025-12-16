@@ -298,8 +298,25 @@ echo [RUN] Starting MongoDB service...
 net start MongoDB
 echo.
 
+REM Start llama server (download model if missing)
+echo [RUN] Checking model...
+set MODEL=models\openai_gpt-oss-20b-MXFP4.gguf
+
+if not exist "%MODEL%" (
+    echo [RUN] Model not found: %MODEL%
+    echo [RUN] Downloading model via uv...
+    uv run src\download_models.py
+    if errorlevel 1 (
+        echo [ERR] Model download failed
+        exit /b 1
+    )
+) else (
+    echo [OK] Model found: %MODEL%
+)
+
 echo [RUN] Starting Llama-server...
-start llama-server -m "models\openai_gpt-oss-20b-MXFP4.gguf" --host 127.0.0.1 --port 8080 -c 32000 -ngl -1 -t 12
+start "" llama-server -m "%MODEL%" --host 127.0.0.1 --port 8080 -c 32000 -ngl -1 -t 12
+echo [OK] Llama-server launched
 
 echo [RUN] Starting API backend (uvicorn API_DB:app on port %API_BASE_PORT%)...
 start "" cmd /k "cd /d src && set \"PYTHONUTF8=1\" && uv run uvicorn API_DB:app --host 0.0.0.0 --port %API_BASE_PORT%"

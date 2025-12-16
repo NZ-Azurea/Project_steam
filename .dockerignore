@@ -1,0 +1,36 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Git
+.git/
+.gitignore
+
+# OS / IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local data / heavy assets (adjust to your project)
+models/
+**/*.gguf
+data/
+datasets/
+downloads/
+tmp/
+cache/
+init-state/
+mongo-data/
+
+# Docker artifacts
+**/*.tar
+**/*.zip

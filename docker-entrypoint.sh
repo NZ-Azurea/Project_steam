@@ -60,6 +60,23 @@ wait_for_mongo
 # 2) Initialize DB once
 run_db_import_once
 
+# start llama server (download model if missing)
+echo "[RUN] Checking model..."
+MODEL="models/openai_gpt-oss-20b-MXFP4.gguf"
+
+if [ ! -f "$MODEL" ]; then
+  echo "[RUN] Model not found: $MODEL"
+  echo "[RUN] Downloading model via uv..."
+  uv run src/download_models.py || exit 1
+else
+  echo "[OK] Model found: $MODEL"
+fi
+
+echo "[RUN] Starting Llama-server..."
+llama-server -m "$MODEL" --host 127.0.0.1 --port 8080 -c 32000 -ngl -1 -t 12 &
+echo "[OK] Llama-server started (PID=$!)"
+
+
 # 3) Start API (run from src like your bootstrap does)
 (
   cd /app/src
